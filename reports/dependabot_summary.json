@@ -1,0 +1,24 @@
+{
+  "alerts": [
+    {
+      "package": {"name": "flask"},
+      "severity": "High",
+      "advisory": {"description": "Flask <2.2 has a DoS vulnerability; update recommended."}
+    },
+    {
+      "package": {"name": "requests"},
+      "severity": "Medium",
+      "advisory": {"description": "Requests <2.31.0 header injection issue; update recommended."}
+    },
+    {
+      "package": {"name": "pytest"},
+      "severity": "Low",
+      "advisory": {"description": "pytest <7.3.0 minor security fix available."}
+    },
+    {
+      "package": {"name": "pyyaml"},
+      "severity": "Critical",
+      "advisory": {"description": "PyYAML <6.0 remote code execution vulnerability."}
+    }
+  ]
+}

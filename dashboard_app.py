@@ -40,7 +40,7 @@ def detect_exploit_keywords(text):
 def load_reports():
     results = []
 
-    # 1) SAST - CodeQL (assumes codeql_report.json with "alerts")
+    # 1) SAST - CodeQL
     codeql = try_load_json(os.path.join('reports', 'codeql_report.json'))
     if codeql and isinstance(codeql.get('alerts'), list):
         for a in codeql['alerts']:
@@ -50,9 +50,6 @@ def load_reports():
             sev = rule.get('severity') or 'medium'
             sev_score = severity_to_score(sev)
             exploit_maturity = detect_exploit_keywords(desc)
-            # runtime evidence not present for SAST; default 0
-            runtime_evidence = 0.0
-            exposure = 5.0   # default medium if unknown
             results.append({
                 'tool': 'CodeQL (SAST)',
                 'id': vuln_id,
@@ -61,37 +58,33 @@ def load_reports():
                 'severity': sev.capitalize(),
                 'sev_score': sev_score,
                 'exploit_maturity': exploit_maturity,
-                'exposure': exposure,
-                'runtime_evidence': runtime_evidence
+                'exposure': 5.0,
+                'runtime_evidence': 0.0
             })
     else:
-        # placeholder if no real CodeQL output yet
         results.append({
             'tool': 'CodeQL (SAST)',
             'id': 'no-codeql',
             'title': 'No CodeQL report',
             'description': 'Run CodeQL on GitHub to produce alerts.',
-            'severity': 'Info',
+            'severity': 'None',
             'sev_score': 0.0,
             'exploit_maturity': 0.0,
             'exposure': 0.0,
             'runtime_evidence': 0.0
         })
 
-    # 2) DAST - OWASP ZAP (reads HTML)
+    # 2) DAST - OWASP ZAP
     zap_text = try_read_text(os.path.join('reports', 'zap-report.html'))
     if zap_text:
-        # count occurrences of "alert" or "vulnerability" as simple proxy
         alert_count = max(0, len(re.findall(r'alert', zap_text, flags=re.IGNORECASE)))
         vuln_count = max(0, len(re.findall(r'vulnerability', zap_text, flags=re.IGNORECASE)))
         total_flags = alert_count + vuln_count
-        desc = zap_text[:1000]  # truncated display
+        desc = zap_text[:1000]
         sev = 'High' if total_flags > 5 else ('Medium' if total_flags > 0 else 'Low')
         sev_score = severity_to_score(sev)
         exploit_maturity = detect_exploit_keywords(zap_text)
-        # runtime evidence: if DAST found anything, treat as runtime evidence
         runtime_evidence = 8.0 if total_flags > 0 else 0.0
-        # exposure: we assume scans targeted a running app; set medium-high
         exposure = 8.0 if '127.0.0.1' not in zap_text else 6.0
         results.append({
             'tool': 'OWASP ZAP (DAST)',
@@ -110,26 +103,23 @@ def load_reports():
             'id': 'no-zap',
             'title': 'No ZAP report',
             'description': 'Run DAST workflow to generate zap-report.html.',
-            'severity': 'Info',
+            'severity': 'None',
             'sev_score': 0.0,
             'exploit_maturity': 0.0,
             'exposure': 0.0,
             'runtime_evidence': 0.0
         })
 
-    # 3) SCA - Dependabot (we read a local dependabot_summary.json if present)
+    # 3) SCA - Dependabot
     dep_path = os.path.join('reports', 'dependabot_summary.json')
     dep = try_load_json(dep_path)
     if dep and isinstance(dep.get('alerts'), list):
         for a in dep['alerts']:
-            pkg = a.get('package', {}).get('name') or a.get('dependency', {}).get('package', {}).get('name', 'package')
+            pkg = a.get('package', {}).get('name') or 'package'
             desc = a.get('advisory', {}).get('description', '') or a.get('summary', '')
             sev = a.get('severity', 'medium')
             sev_score = severity_to_score(sev)
             exploit_maturity = detect_exploit_keywords(desc)
-            # dependencies generally have lower runtime evidence
-            runtime_evidence = 2.0
-            exposure = 5.0
             results.append({
                 'tool': 'Dependabot (SCA)',
                 'id': f'dep-{pkg}',
@@ -138,8 +128,8 @@ def load_reports():
                 'severity': sev.capitalize(),
                 'sev_score': sev_score,
                 'exploit_maturity': exploit_maturity,
-                'exposure': exposure,
-                'runtime_evidence': runtime_evidence
+                'exposure': 5.0,
+                'runtime_evidence': 2.0
             })
     else:
         results.append({
@@ -147,31 +137,27 @@ def load_reports():
             'id': 'no-dep',
             'title': 'Dependabot: check GitHub Security tab',
             'description': 'Dependabot findings are available in GitHub Security → Dependabot alerts.',
-            'severity': 'Info',
+            'severity': 'None',
             'sev_score': 0.0,
             'exploit_maturity': 0.0,
             'exposure': 0.0,
             'runtime_evidence': 0.0
         })
 
-    # ----- Compute final exploit likelihood score (0-10) -----
-    # Weights (explainable, tunable)
+    # ----- Compute final exploit likelihood score (weighted 0-10) -----
     w_sev = 0.35
     w_exploit = 0.30
     w_exposure = 0.20
     w_runtime = 0.15
 
     for r in results:
-        # each component already roughly in 0-10 range
         sev = float(r.get('sev_score', 0.0))
         expl = float(r.get('exploit_maturity', 0.0))
         exposure = float(r.get('exposure', 0.0))
         runtime = float(r.get('runtime_evidence', 0.0))
         score = (w_sev*sev + w_exploit*expl + w_exposure*exposure + w_runtime*runtime)
-        # normalize to 0-10 (max possible is 10 under our proxies)
         r['exploit_score'] = round(min(score, 10.0), 2)
 
-    # sort by exploit_score desc
     results.sort(key=lambda x: x['exploit_score'], reverse=True)
     return results
 
@@ -192,23 +178,32 @@ def dashboard():
     </head>
     <body>
       <h1>ASPM Dashboard Simulation — Ranked by Exploit Likelihood</h1>
-      <p>Combines CodeQL, ZAP, and Dependabot. Higher score = more likely to be exploited.</p>
+      <p>Combines CodeQL, OWASP ZAP, and Dependabot. Higher score = more likely to be exploited.</p>
       <table>
-        <tr><th>Rank</th><th>Tool</th><th>Title</th><th>Severity</th><th>Exploit Score (0-10)</th><th>Description</th></tr>
+        <tr>
+          <th>Rank</th><th>Tool</th><th>ID</th><th>Title</th><th>Severity</th>
+          <th>Exploit Score (0-10)</th><th>Exploit Maturity</th><th>Exposure</th>
+          <th>Runtime Evidence</th><th>Description</th>
+        </tr>
         {% for i,item in enumerate(findings) %}
         <tr>
           <td>{{ i+1 }}</td>
           <td>{{ item.tool }}</td>
+          <td>{{ item.id }}</td>
           <td>{{ item.title }}</td>
           <td>{{ item.severity }}</td>
           <td class="score">{{ item.exploit_score }}</td>
+          <td>{{ item.exploit_maturity }}</td>
+          <td>{{ item.exposure }}</td>
+          <td>{{ item.runtime_evidence }}</td>
           <td style="max-width:420px">{{ item.description|truncate(200) }}</td>
         </tr>
         {% endfor %}
       </table>
     </body></html>
     """
-    return render_template_string(html, findings=findings)
+    return render_template_string(html, findings=findings, enumerate=enumerate)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ZAP DAST Report</title>
+    <title>OWASP ZAP Report</title>
 </head>
 <body>
-    <h1>DAST Scan Report (Demo)</h1>
+    <h1>OWASP ZAP Vulnerability Report</h1>
     <table border="1" cellpadding="5">
         <thead>
             <tr>
@@ -26,13 +26,19 @@
                 <td>Cross-Site Scripting (XSS)</td>
                 <td>Medium</td>
                 <td>/comments</td>
-                <td>User input is reflected without escaping HTML.</td>
+                <td>User input reflected without escaping HTML.</td>
             </tr>
             <tr>
                 <td>Information Disclosure</td>
                 <td>Low</td>
                 <td>/api/status</td>
-                <td>Server version exposed in response headers.</td>
+                <td>Server version exposed in headers.</td>
+            </tr>
+            <tr>
+                <td>Authentication Bypass</td>
+                <td>Critical</td>
+                <td>/admin</td>
+                <td>Weak authentication allows bypass to admin endpoints.</td>
             </tr>
         </tbody>
     </table>

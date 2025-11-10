@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "ruleId": "python/sql-injection",
+      "level": "Medium",
+      "message": "Possible SQL injection in function login_user",
+      "file": "app.py",
+      "url": "https://github.com/Morak999/ASPM-Demo/security/code-scanning/1?query=rule_id:python/sql-injection"
+    },
+    {
+      "ruleId": "python/xss",
+      "level": "High",
+      "message": "Potential cross-site scripting in comments endpoint",
+      "file": "app.py",
+      "url": "https://github.com/Morak999/ASPM-Demo/security/code-scanning/1?query=rule_id:python/xss"
+    },
+    {
+      "ruleId": "python/hardcoded-secret",
+      "level": "Critical",
+      "message": "Hardcoded secret found in config.py",
+      "file": "config.py",
+      "url": "https://github.com/Morak999/ASPM-Demo/security/code-scanning/1?query=rule_id:python/hardcoded-secret"
+    }
+  ]
+}
