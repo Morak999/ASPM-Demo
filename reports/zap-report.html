@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ZAP DAST Report</title>
+</head>
+<body>
+    <h1>DAST Scan Report (Demo)</h1>
+    <table border="1" cellpadding="5">
+        <thead>
+            <tr>
+                <th>Vulnerability</th>
+                <th>Risk Level</th>
+                <th>URL</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>SQL Injection</td>
+                <td>High</td>
+                <td>/login</td>
+                <td>Input not sanitized; could allow SQL injection.</td>
+            </tr>
+            <tr>
+                <td>Cross-Site Scripting (XSS)</td>
+                <td>Medium</td>
+                <td>/comments</td>
+                <td>User input is reflected without escaping HTML.</td>
+            </tr>
+            <tr>
+                <td>Information Disclosure</td>
+                <td>Low</td>
+                <td>/api/status</td>
+                <td>Server version exposed in response headers.</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
