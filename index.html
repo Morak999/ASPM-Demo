@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ASPM Demo</title>
+</head>
+<body>
+  <h1>Welcome to ASPM Demo</h1>
+  <p>This is a simple Flask app to test SAST and DAST scans.</p>
+
+  <h3>Search Section</h3>
+  <form action="/search" method="get">
+    <input type="text" name="q" placeholder="Enter a search term" />
+    <button type="submit">Search</button>
+  </form>
+
+  <h3>Items API</h3>
+  <button onclick="loadItems()">Load Items</button>
+  <pre id="output"></pre>
+
+  <script>
+    async function loadItems() {
+      const res = await fetch('/api/items');
+      const data = await res.json();
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
